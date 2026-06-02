@@ -1,0 +1,22 @@
+V01PAK:
+  name: DHL Paket
+  procedure: "01"
+  max_weight_g: 31500
+  domestic: true
+
+V62KP:
+  name: Warenpost
+  procedure: "62"
+  max_weight_g: 1000
+  domestic: true
+
+V53WPAK:
+  name: DHL Paket International
+  procedure: "53"
+  domestic: false
+
+V66WPI:
+  name: Warenpost International
+  procedure: "66"
+  max_weight_g: 1000
+  domestic: false
