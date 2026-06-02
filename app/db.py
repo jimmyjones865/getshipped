@@ -22,6 +22,11 @@ def init_db():
                 ref_no TEXT
             )
         """)
+        # Migration: add recipient_zip if table existed before this column was added
+        try:
+            conn.execute("ALTER TABLE labels ADD COLUMN recipient_zip TEXT")
+        except Exception:
+            pass
 
 
 @contextmanager
