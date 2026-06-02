@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 DB_PATH = "/data/labels.db"
 
@@ -58,7 +58,13 @@ def log_label(recipient_name: str, recipient_zip: str, recipient_city: str,
         )
 
 
-def get_labels(limit: int = 50) -> list[dict]:
+def purge_old_labels(retention_days: int):
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
+    with _conn() as conn:
+        conn.execute("DELETE FROM labels WHERE created_at < ?", (cutoff,))
+
+
+def get_labels(limit: int = 100) -> list[dict]:
     with _conn() as conn:
         rows = conn.execute(
             "SELECT * FROM labels ORDER BY id DESC LIMIT ?", (limit,)

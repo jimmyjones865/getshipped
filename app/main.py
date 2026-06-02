@@ -9,7 +9,7 @@ from pydantic import BaseModel, field_validator
 from config import load_config, load_products, select_product
 from dhl_client import DHLClient, parse_address_text
 from printnode import print_label
-from db import init_db, log_label, get_labels
+from db import init_db, log_label, get_labels, purge_old_labels
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -20,6 +20,8 @@ dhl = DHLClient(config, products)
 
 app = FastAPI()
 init_db()
+if config.log_retention_days:
+    purge_old_labels(config.log_retention_days)
 
 
 class ShipRequest(BaseModel):

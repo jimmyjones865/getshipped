@@ -31,6 +31,7 @@ class Config:
     printnode_api_key: str
     printnode_printer_id: int
     products_file: str
+    log_retention_days: int | None
 
 
 def load_config() -> Config:
@@ -57,6 +58,7 @@ def load_config() -> Config:
         printnode_api_key=os.environ["PRINTNODE_API_KEY"],
         printnode_printer_id=int(os.environ["PRINTNODE_PRINTER_ID"]),
         products_file=os.environ.get("PRODUCTS_FILE", "/app/products.yaml"),
+        log_retention_days=int(os.environ["LOG_RETENTION_DAYS"]) if os.environ.get("LOG_RETENTION_DAYS") else None,
     )
 
 

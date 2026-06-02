@@ -244,6 +244,28 @@
   }
 
   #log-empty { color: var(--dim); font-size: 13px; padding: 12px 0; }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  .btn-page {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .btn-page:disabled { opacity: 0.3; cursor: default; }
+  .btn-page:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -332,11 +354,19 @@
     <div id="log-container">
       <div id="log-empty">Noch keine Labels gedruckt.</div>
     </div>
+    <div class="pagination" id="pagination" style="display:none">
+      <button class="btn-page" id="btn-prev" onclick="changePage(-1)">← Zurück</button>
+      <span id="page-info"></span>
+      <button class="btn-page" id="btn-next" onclick="changePage(1)">Weiter →</button>
+    </div>
   </div>
 </div>
 
 <script>
 let products = [];
+let allLabels = [];
+let currentPage = 0;
+const PAGE_SIZE = 10;
 
 async function init() {
   const res = await fetch('/api/products');
@@ -517,14 +547,27 @@ function hideNotice() {
 
 async function loadLog() {
   const res = await fetch('/api/labels');
-  const rows = await res.json();
+  allLabels = await res.json();
+  currentPage = 0;
+  renderLog();
+}
+
+function changePage(dir) {
+  const totalPages = Math.ceil(allLabels.length / PAGE_SIZE);
+  currentPage = Math.max(0, Math.min(currentPage + dir, totalPages - 1));
+  renderLog();
+}
+
+function renderLog() {
   const container = document.getElementById('log-container');
   const empty = document.getElementById('log-empty');
+  const pagination = document.getElementById('pagination');
 
-  if (!rows.length) {
+  if (!allLabels.length) {
     empty.style.display = '';
     const table = container.querySelector('table');
     if (table) table.remove();
+    pagination.style.display = 'none';
     return;
   }
 
@@ -538,8 +581,11 @@ async function loadLog() {
     container.appendChild(table);
   }
 
+  const totalPages = Math.ceil(allLabels.length / PAGE_SIZE);
+  const page = allLabels.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
   const tbody = table.querySelector('tbody');
-  tbody.innerHTML = rows.map(r => {
+  tbody.innerHTML = page.map(r => {
     const dt = new Date(r.created_at);
     const time = dt.toLocaleTimeString('de', {hour:'2-digit', minute:'2-digit'});
     const date = dt.toLocaleDateString('de', {day:'2-digit', month:'2-digit'});
@@ -553,6 +599,12 @@ async function loadLog() {
       <td class="mono"><a href="${trackUrl}" target="_blank" style="color:var(--accent);text-decoration:none">${esc(r.tracking_number)}</a></td>
     </tr>`;
   }).join('');
+
+  pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+  document.getElementById('btn-prev').disabled = currentPage === 0;
+  document.getElementById('btn-next').disabled = currentPage >= totalPages - 1;
+  document.getElementById('page-info').textContent =
+    `${currentPage + 1} / ${totalPages}`;
 }
 
 function esc(s) {
