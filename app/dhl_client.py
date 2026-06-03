@@ -55,6 +55,45 @@ _COUNTRY_MAP = {
 }
 
 
+_COUNTRY_NAMES = {
+    'GERMANY': 'DE', 'DEUTSCHLAND': 'DE',
+    'AUSTRIA': 'AT', 'ÖSTERREICH': 'AT', 'OESTERREICH': 'AT',
+    'SWITZERLAND': 'CH', 'SCHWEIZ': 'CH', 'SUISSE': 'CH', 'SVIZZERA': 'CH',
+    'FRANCE': 'FR', 'FRANKREICH': 'FR',
+    'NETHERLANDS': 'NL', 'NIEDERLANDE': 'NL', 'HOLLAND': 'NL',
+    'BELGIUM': 'BE', 'BELGIEN': 'BE', 'BELGIQUE': 'BE',
+    'ITALY': 'IT', 'ITALIEN': 'IT', 'ITALIA': 'IT',
+    'SPAIN': 'ES', 'SPANIEN': 'ES', 'ESPAÑA': 'ES',
+    'POLAND': 'PL', 'POLEN': 'PL',
+    'CZECH REPUBLIC': 'CZ', 'CZECHIA': 'CZ', 'TSCHECHIEN': 'CZ',
+    'DENMARK': 'DK', 'DÄNEMARK': 'DK', 'DAENEMARK': 'DK',
+    'SWEDEN': 'SE', 'SCHWEDEN': 'SE',
+    'NORWAY': 'NO', 'NORWEGEN': 'NO',
+    'FINLAND': 'FI', 'FINNLAND': 'FI',
+    'LUXEMBOURG': 'LU', 'LUXEMBURG': 'LU',
+    'PORTUGAL': 'PT',
+    'HUNGARY': 'HU', 'UNGARN': 'HU',
+    'ROMANIA': 'RO', 'RUMÄNIEN': 'RO', 'RUMAENIEN': 'RO',
+    'SLOVAKIA': 'SK', 'SLOWAKEI': 'SK',
+    'SLOVENIA': 'SI', 'SLOWENIEN': 'SI',
+    'CROATIA': 'HR', 'KROATIEN': 'HR',
+    'BULGARIA': 'BG', 'BULGARIEN': 'BG',
+    'GREECE': 'GR', 'GRIECHENLAND': 'GR',
+    'UNITED KINGDOM': 'GB', 'UK': 'GB', 'GREAT BRITAIN': 'GB', 'GROSSBRITANNIEN': 'GB',
+    'IRELAND': 'IE', 'IRLAND': 'IE',
+    'USA': 'US', 'UNITED STATES': 'US', 'UNITED STATES OF AMERICA': 'US',
+    'CANADA': 'CA', 'KANADA': 'CA',
+    'AUSTRALIA': 'AU', 'AUSTRALIEN': 'AU',
+    'JAPAN': 'JP',
+    'CHINA': 'CN',
+}
+
+
+def _normalize_country(s: str) -> str:
+    key = s.strip().upper()
+    return _COUNTRY_NAMES.get(key, key)
+
+
 def _to_alpha3(code: str) -> str:
     code = code.strip().upper()
     if len(code) == 3:
@@ -63,52 +102,45 @@ def _to_alpha3(code: str) -> str:
 
 
 def parse_address_text(text: str) -> dict:
-    """Parse pasted address block into structured fields. Best-effort."""
+    """Parse pasted address block into structured fields. Best-effort, bottom-up."""
     lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
-    result = {"name": "", "street": "", "house": "", "zip": "", "city": "", "country": "DE"}
+    result = {"name": "", "name2": "", "name3": "", "street": "", "house": "", "zip": "", "city": "", "country": "DE"}
     if not lines:
         return result
 
-    # Detect country line (last line, 2-letter code or known country name)
-    country_line = None
-    if len(lines) >= 4 and len(lines[-1]) == 2 and lines[-1].isalpha():
-        country_line = lines[-1].upper()
+    # Country: last line, only if ≥4 lines remain after (need name+street+zip+city)
+    if len(lines) >= 4:
+        key = lines[-1].strip().upper()
+        normalized = _normalize_country(lines[-1])
+        if normalized != key or (len(key) == 2 and key.isalpha()):
+            result["country"] = normalized
+            lines = lines[:-1]
+
+    # Zip + city: last line matching [4-6 alphanumeric] space [rest]
+    if lines:
+        m = re.match(r'^([A-Z0-9]{4,6})\s+(.+)$', lines[-1], re.IGNORECASE)
+        if m:
+            result["zip"] = m.group(1).upper()
+            result["city"] = m.group(2).strip()
+            lines = lines[:-1]
+
+    # Street + house: last line; house is a digit-led token at the end
+    if lines:
+        m = re.match(r'^(.+?)\s+(\d+[\w/-]*)$', lines[-1])
+        if m:
+            result["street"] = m.group(1).strip()
+            result["house"] = m.group(2).strip()
+        else:
+            result["street"] = lines[-1]
         lines = lines[:-1]
-    elif len(lines) >= 4 and len(lines[-1]) <= 30 and not any(c.isdigit() for c in lines[-1]):
-        # Could be a country name — leave as-is for now, user can edit
-        country_line = lines[-1]
-        lines = lines[:-1]
 
-    result["name"] = lines[0] if lines else ""
-
-    if len(lines) >= 3:
-        # lines[1] = street + house, lines[2] = zip + city
-        street_line = lines[1]
-        zip_city = lines[2]
-    elif len(lines) == 2:
-        street_line = lines[1]
-        zip_city = ""
-    else:
-        return result
-
-    # Split street and house number
-    m = re.match(r'^(.+?)\s+(\d+[\w/-]*)$', street_line)
-    if m:
-        result["street"] = m.group(1).strip()
-        result["house"] = m.group(2).strip()
-    else:
-        result["street"] = street_line
-
-    # Split zip and city (German: "12345 Berlin")
-    m = re.match(r'^(\d{4,5})\s+(.+)$', zip_city)
-    if m:
-        result["zip"] = m.group(1)
-        result["city"] = m.group(2)
-    else:
-        result["city"] = zip_city
-
-    if country_line:
-        result["country"] = country_line
+    # Remaining lines → name1, name2, name3
+    if lines:
+        result["name"] = lines[0]
+    if len(lines) > 1:
+        result["name2"] = lines[1]
+    if len(lines) > 2:
+        result["name3"] = lines[2]
 
     return result
 
@@ -159,18 +191,22 @@ class DHLClient:
 
     def _build_address(self, addr: dict, is_sender: bool = False) -> dict:
         result = {
-            "name1": addr["name"][:50],
-            "addressStreet": addr["street"][:50],
-            "postalCode": addr["zip"][:10],
-            "city": addr["city"][:40],
+            "name1": addr["name"],
+            "addressStreet": addr["street"],
+            "postalCode": addr["zip"],
+            "city": addr["city"],
             "country": _to_alpha3(addr.get("country", "DE")),
         }
+        if addr.get("name2"):
+            result["name2"] = addr["name2"]
+        if addr.get("name3"):
+            result["name3"] = addr["name3"]
         if addr.get("house"):
-            result["addressHouse"] = addr["house"][:10]
+            result["addressHouse"] = addr["house"]
         if addr.get("email"):
-            result["email"] = addr["email"][:80]
+            result["email"] = addr["email"]
         if not is_sender and addr.get("phone"):
-            result["phone"] = addr["phone"][:20]
+            result["phone"] = addr["phone"]
         return result
 
     def create_shipment(self, recipient: dict, weight_g: int, product_code: str, ref_no: str) -> dict:

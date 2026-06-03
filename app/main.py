@@ -26,6 +26,8 @@ if config.log_retention_days:
 
 class ShipRequest(BaseModel):
     name: str
+    name2: str = ""
+    name3: str = ""
     street: str
     house: str = ""
     zip: str
@@ -85,6 +87,8 @@ def api_ship(req: ShipRequest):
 
     recipient = {
         "name": req.name,
+        "name2": req.name2,
+        "name3": req.name3,
         "street": req.street,
         "house": req.house,
         "zip": req.zip,
