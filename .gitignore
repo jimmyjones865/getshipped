@@ -3,3 +3,5 @@ data/
 __pycache__/
 *.pyc
 CLAUDE.md
+PLAN.md
+DECISIONS.md
