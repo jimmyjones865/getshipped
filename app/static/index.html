@@ -88,6 +88,10 @@
     transition: border-color 0.15s;
   }
 
+  input:not([type=radio]), textarea {
+    font-family: var(--font-mono);
+  }
+
   input:focus, textarea:focus, select:focus {
     border-color: var(--accent);
   }
@@ -359,9 +363,6 @@
             <input id="f-country" type="text" value="DE" maxlength="3" autocomplete="off" style="text-transform:uppercase">
           </div>
         </div>
-
-        <label>E-Mail <span class="opt">optional</span></label>
-        <input id="f-email" type="email" autocomplete="off">
       </div>
     </div>
 
@@ -392,10 +393,15 @@
     <div class="product-grid" id="product-grid"></div>
   </div>
 
-  <!-- Ref -->
+  <!-- Optional -->
   <div class="card">
-    <div class="card-title">Optional: Sendungsreferenz</div>
-    <input id="f-ref" type="text" placeholder="Automatisch" autocomplete="off">
+    <div class="card-title">Optionale Angaben</div>
+    <label>Referenz</label>
+    <input id="f-ref" type="text" placeholder="Wird auf dem Label gedruckt" autocomplete="off">
+
+    <label>Email</label>
+    <input id="f-email" type="email" placeholder="Empfänger-Emailadresse" autocomplete="off">
+    <div id="email-warn" class="notice" style="margin-top:6px"></div>
   </div>
 
   <!-- Status -->
@@ -459,6 +465,19 @@ async function init() {
 
   document.getElementById('f-weight').addEventListener('input', autoSelectProduct);
   document.getElementById('f-country').addEventListener('input', autoSelectProduct);
+  document.getElementById('f-email').addEventListener('input', checkEmail);
+}
+
+function checkEmail() {
+  const val = document.getElementById('f-email').value.trim();
+  const el = document.getElementById('email-warn');
+  if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    el.className = 'notice warn';
+    el.textContent = 'Sieht nicht nach einer Emailadresse aus.';
+  } else {
+    el.className = 'notice';
+    el.textContent = '';
+  }
 }
 
 function renderProducts() {
