@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>get shipt</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" href="/static/fontawesome/css/fontawesome.min.css">
+<link rel="stylesheet" href="/static/fontawesome/css/solid.min.css">
 <style>
   :root {
     --bg:      #2e3440;
@@ -358,14 +362,58 @@
             <label>Stadt</label>
             <input id="f-city" type="text" autocomplete="off">
           </div>
-          <div class="w60">
+          <div style="flex:0 0 190px">
             <label>Land</label>
-            <input id="f-country" type="text" value="DE" maxlength="3" autocomplete="off" style="text-transform:uppercase">
+            <div style="display:flex; gap:6px; align-items:center">
+              <select id="f-country" style="flex:1">
+                <option value="DEU" selected>Deutschland</option>
+                <option value="ALB">Albanien</option>
+                <option value="AUT">Österreich</option>
+                <option value="BIH">Bosnien und Herzegowina</option>
+                <option value="BEL">Belgien</option>
+                <option value="BGR">Bulgarien</option>
+                <option value="CHE">Schweiz</option>
+                <option value="CYP">Zypern</option>
+                <option value="CZE">Tschechien</option>
+                <option value="DNK">Dänemark</option>
+                <option value="EST">Estland</option>
+                <option value="ESP">Spanien</option>
+                <option value="FIN">Finnland</option>
+                <option value="FRA">Frankreich</option>
+                <option value="GBR">Vereinigtes Königreich</option>
+                <option value="GRC">Griechenland</option>
+                <option value="HRV">Kroatien</option>
+                <option value="HUN">Ungarn</option>
+                <option value="IRL">Irland</option>
+                <option value="ISL">Island</option>
+                <option value="ITA">Italien</option>
+                <option value="LIE">Liechtenstein</option>
+                <option value="LTU">Litauen</option>
+                <option value="LUX">Luxemburg</option>
+                <option value="LVA">Lettland</option>
+                <option value="MDA">Moldau</option>
+                <option value="MNE">Montenegro</option>
+                <option value="MKD">Nordmazedonien</option>
+                <option value="MLT">Malta</option>
+                <option value="NLD">Niederlande</option>
+                <option value="NOR">Norwegen</option>
+                <option value="POL">Polen</option>
+                <option value="PRT">Portugal</option>
+                <option value="ROU">Rumänien</option>
+                <option value="SRB">Serbien</option>
+                <option value="SWE">Schweden</option>
+                <option value="SVN">Slowenien</option>
+                <option value="SVK">Slowakei</option>
+                <option value="UKR">Ukraine</option>
+              </select>
+              <span id="country-code" class="opt" style="font-family:var(--font-mono); white-space:nowrap">DEU</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <div id="country-warn" class="notice" style="margin-top:10px"></div>
     <div id="len-warn" class="notice" style="margin-top:10px"></div>
   </div>
 
@@ -408,7 +456,7 @@
   <div id="notice" class="notice"></div>
 
   <!-- Submit -->
-  <button class="btn-ship" id="btn-ship" onclick="ship()">Label drucken</button>
+  <button class="btn-ship" id="btn-ship" onclick="ship()"><i class="fa-solid fa-rocket"></i> Label drucken</button>
 
   <!-- Log -->
   <div class="card">
@@ -464,7 +512,10 @@ async function init() {
   loadLog();
 
   document.getElementById('f-weight').addEventListener('input', autoSelectProduct);
-  document.getElementById('f-country').addEventListener('input', autoSelectProduct);
+  document.getElementById('f-country').addEventListener('change', () => {
+    autoSelectProduct();
+    document.getElementById('country-code').textContent = document.getElementById('f-country').value;
+  });
   document.getElementById('f-email').addEventListener('input', checkEmail);
 }
 
@@ -500,8 +551,8 @@ function renderProducts() {
 
 function autoSelectProduct() {
   const weight_g = parseWeight();
-  const country = document.getElementById('f-country').value.trim().toUpperCase();
-  const domestic = (country === 'DE' || country === 'DEU' || country === '');
+  const country = document.getElementById('f-country').value;
+  const domestic = (country === 'DEU');
 
   let best = null;
   const eligible = products.filter(p => p.domestic === domestic);
@@ -561,7 +612,20 @@ async function parsePaste() {
   document.getElementById('f-house').value   = addr.house   || '';
   document.getElementById('f-zip').value     = addr.zip     || '';
   document.getElementById('f-city').value    = addr.city    || '';
-  if (addr.country) document.getElementById('f-country').value = addr.country.toUpperCase();
+  const countryWarn = document.getElementById('country-warn');
+  countryWarn.className = 'notice';
+  countryWarn.textContent = '';
+  if (addr.country) {
+    const sel = document.getElementById('f-country');
+    const code = addr.country.toUpperCase();
+    if ([...sel.options].some(o => o.value === code)) {
+      sel.value = code;
+    } else {
+      countryWarn.className = 'notice warn';
+      countryWarn.textContent = `Land "${addr.country}" wird nicht unterstützt — bitte über DHL direkt versenden.`;
+    }
+  }
+  document.getElementById('country-code').textContent = document.getElementById('f-country').value;
   autoSelectProduct();
   checkLengths();
 }
@@ -583,7 +647,7 @@ async function ship() {
 
   const btn = document.getElementById('btn-ship');
   btn.disabled = true;
-  btn.textContent = 'Wird gedruckt…';
+  btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Wird gedruckt…';
   hideNotice();
 
   try {
@@ -598,7 +662,7 @@ async function ship() {
         house:        document.getElementById('f-house').value.trim(),
         zip,
         city,
-        country:      document.getElementById('f-country').value.trim() || 'DE',
+        country:      document.getElementById('f-country').value || 'DEU',
         email:        document.getElementById('f-email').value.trim(),
         weight_g,
         product_code,
@@ -624,7 +688,10 @@ async function ship() {
     ['f-name','f-name2','f-name3','f-street','f-house','f-zip','f-city','f-email','f-ref'].forEach(id => {
       document.getElementById(id).value = '';
     });
-    document.getElementById('f-country').value = 'DE';
+    document.getElementById('f-country').value = 'DEU';
+    document.getElementById('country-code').textContent = 'DEU';
+    document.getElementById('country-warn').className = 'notice';
+    document.getElementById('country-warn').textContent = '';
     document.getElementById('f-weight').value = '';
     checkLengths();
     autoSelectProduct();
@@ -634,7 +701,7 @@ async function ship() {
     showNotice('err', 'Netzwerkfehler: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Label drucken';
+    btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Label drucken';
   }
 }
 

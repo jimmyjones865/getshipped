@@ -56,64 +56,64 @@ _COUNTRY_MAP = {
 
 
 _COUNTRY_NAMES = {
-    'GERMANY': 'DE', 'DEUTSCHLAND': 'DE',
-    'AUSTRIA': 'AT', 'ÖSTERREICH': 'AT', 'OESTERREICH': 'AT',
-    'SWITZERLAND': 'CH', 'SCHWEIZ': 'CH', 'SUISSE': 'CH', 'SVIZZERA': 'CH',
-    'FRANCE': 'FR', 'FRANKREICH': 'FR',
-    'NETHERLANDS': 'NL', 'NIEDERLANDE': 'NL', 'HOLLAND': 'NL',
-    'BELGIUM': 'BE', 'BELGIEN': 'BE', 'BELGIQUE': 'BE',
-    'ITALY': 'IT', 'ITALIEN': 'IT', 'ITALIA': 'IT',
-    'SPAIN': 'ES', 'SPANIEN': 'ES', 'ESPAÑA': 'ES',
-    'POLAND': 'PL', 'POLEN': 'PL',
-    'CZECH REPUBLIC': 'CZ', 'CZECHIA': 'CZ', 'TSCHECHIEN': 'CZ',
-    'DENMARK': 'DK', 'DÄNEMARK': 'DK', 'DAENEMARK': 'DK',
-    'SWEDEN': 'SE', 'SCHWEDEN': 'SE',
-    'NORWAY': 'NO', 'NORWEGEN': 'NO',
-    'FINLAND': 'FI', 'FINNLAND': 'FI',
-    'LUXEMBOURG': 'LU', 'LUXEMBURG': 'LU',
-    'PORTUGAL': 'PT',
-    'HUNGARY': 'HU', 'UNGARN': 'HU',
-    'ROMANIA': 'RO', 'RUMÄNIEN': 'RO', 'RUMAENIEN': 'RO',
-    'SLOVAKIA': 'SK', 'SLOWAKEI': 'SK',
-    'SLOVENIA': 'SI', 'SLOWENIEN': 'SI',
-    'CROATIA': 'HR', 'KROATIEN': 'HR',
-    'BULGARIA': 'BG', 'BULGARIEN': 'BG',
-    'GREECE': 'GR', 'GRIECHENLAND': 'GR',
-    'UNITED KINGDOM': 'GB', 'UK': 'GB', 'GREAT BRITAIN': 'GB', 'GROSSBRITANNIEN': 'GB',
-    'IRELAND': 'IE', 'IRLAND': 'IE',
-    'USA': 'US', 'UNITED STATES': 'US', 'UNITED STATES OF AMERICA': 'US',
-    'CANADA': 'CA', 'KANADA': 'CA',
-    'AUSTRALIA': 'AU', 'AUSTRALIEN': 'AU',
-    'JAPAN': 'JP',
-    'CHINA': 'CN',
+    'GERMANY': 'DEU', 'DEUTSCHLAND': 'DEU',
+    'AUSTRIA': 'AUT', 'ÖSTERREICH': 'AUT', 'OESTERREICH': 'AUT',
+    'SWITZERLAND': 'CHE', 'SCHWEIZ': 'CHE', 'SUISSE': 'CHE', 'SVIZZERA': 'CHE',
+    'FRANCE': 'FRA', 'FRANKREICH': 'FRA',
+    'NETHERLANDS': 'NLD', 'NIEDERLANDE': 'NLD', 'HOLLAND': 'NLD',
+    'BELGIUM': 'BEL', 'BELGIEN': 'BEL', 'BELGIQUE': 'BEL',
+    'ITALY': 'ITA', 'ITALIEN': 'ITA', 'ITALIA': 'ITA',
+    'SPAIN': 'ESP', 'SPANIEN': 'ESP', 'ESPAÑA': 'ESP',
+    'POLAND': 'POL', 'POLEN': 'POL',
+    'CZECH REPUBLIC': 'CZE', 'CZECHIA': 'CZE', 'TSCHECHIEN': 'CZE',
+    'DENMARK': 'DNK', 'DÄNEMARK': 'DNK', 'DAENEMARK': 'DNK',
+    'SWEDEN': 'SWE', 'SCHWEDEN': 'SWE',
+    'NORWAY': 'NOR', 'NORWEGEN': 'NOR',
+    'FINLAND': 'FIN', 'FINNLAND': 'FIN',
+    'LUXEMBOURG': 'LUX', 'LUXEMBURG': 'LUX',
+    'PORTUGAL': 'PRT',
+    'HUNGARY': 'HUN', 'UNGARN': 'HUN',
+    'ROMANIA': 'ROU', 'RUMÄNIEN': 'ROU', 'RUMAENIEN': 'ROU',
+    'SLOVAKIA': 'SVK', 'SLOWAKEI': 'SVK',
+    'SLOVENIA': 'SVN', 'SLOWENIEN': 'SVN',
+    'CROATIA': 'HRV', 'KROATIEN': 'HRV',
+    'BULGARIA': 'BGR', 'BULGARIEN': 'BGR',
+    'GREECE': 'GRC', 'GRIECHENLAND': 'GRC',
+    'UNITED KINGDOM': 'GBR', 'UK': 'GBR', 'GREAT BRITAIN': 'GBR', 'GROSSBRITANNIEN': 'GBR',
+    'ENGLAND': 'GBR', 'SCOTLAND': 'GBR', 'SCHOTTLAND': 'GBR', 'WALES': 'GBR',
+    'IRELAND': 'IRL', 'IRLAND': 'IRL',
+    'USA': 'USA', 'UNITED STATES': 'USA', 'UNITED STATES OF AMERICA': 'USA',
+    'CANADA': 'CAN', 'KANADA': 'CAN',
+    'AUSTRALIA': 'AUS', 'AUSTRALIEN': 'AUS',
+    'JAPAN': 'JPN',
+    'CHINA': 'CHN',
 }
 
 
-def _normalize_country(s: str) -> str:
+def _recognize_country(s: str) -> str | None:
+    """Returns alpha-3 code if `s` is a recognized country name or 2/3-letter code, else None."""
     key = s.strip().upper()
-    return _COUNTRY_NAMES.get(key, key)
-
-
-def _to_alpha3(code: str) -> str:
-    code = code.strip().upper()
-    if len(code) == 3:
-        return code
-    return _COUNTRY_MAP.get(code, code)
+    if key in _COUNTRY_NAMES:
+        return _COUNTRY_NAMES[key]
+    if len(key) == 2 and key in _COUNTRY_MAP:
+        return _COUNTRY_MAP[key]
+    if len(key) == 3 and key in _COUNTRY_MAP.values():
+        return key
+    return None
 
 
 def parse_address_text(text: str) -> dict:
     """Parse pasted address block into structured fields. Best-effort, bottom-up."""
     lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
-    result = {"name": "", "name2": "", "name3": "", "street": "", "house": "", "zip": "", "city": "", "country": "DE"}
+    result = {"name": "", "name2": "", "name3": "", "street": "", "house": "", "zip": "", "city": "", "country": "DEU"}
     if not lines:
         return result
 
     # Country: last line, only if ≥4 lines remain after (need name+street+zip+city)
     if len(lines) >= 4:
-        key = lines[-1].strip().upper()
-        normalized = _normalize_country(lines[-1])
-        if normalized != key or (len(key) == 2 and key.isalpha()):
-            result["country"] = normalized
+        recognized = _recognize_country(lines[-1])
+        if recognized:
+            result["country"] = recognized
             lines = lines[:-1]
 
     # Zip + city: last line matching [4-6 alphanumeric] space [rest]
@@ -195,7 +195,7 @@ class DHLClient:
             "addressStreet": addr["street"],
             "postalCode": addr["zip"],
             "city": addr["city"],
-            "country": _to_alpha3(addr.get("country", "DE")),
+            "country": addr.get("country", "DEU").strip().upper(),
         }
         if addr.get("name2"):
             result["name2"] = addr["name2"]

@@ -32,7 +32,7 @@ class ShipRequest(BaseModel):
     house: str = ""
     zip: str
     city: str
-    country: str = "DE"
+    country: str = "DEU"
     email: str = ""
     weight_g: int
     product_code: str = ""
@@ -69,7 +69,7 @@ def api_parse_address(req: ParseRequest):
 
 @app.post("/api/ship")
 def api_ship(req: ShipRequest):
-    domestic = req.country.upper().strip() in ("DE", "DEU")
+    domestic = req.country.upper().strip() == "DEU"
 
     product_code = req.product_code
     if not product_code:
