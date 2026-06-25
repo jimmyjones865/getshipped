@@ -230,7 +230,6 @@ class DHLClient:
             "product": product_code,
             "billingNumber": self._billing_number(product_code),
             "refNo": ref_no[:35],
-            "costCenter": ref_no[:50],
             "shipDate": date.today().isoformat(),
             "shipper": self._build_address(shipper_addr, is_sender=True),
             "consignee": self._build_address(recipient),
