@@ -1,4 +1,5 @@
 import re
+import time
 import requests
 from datetime import date
 
@@ -159,6 +160,7 @@ class DHLClient:
         self.config = config
         self.products = products
         self.token = None
+        self._token_expires_at = 0
         self._token_url = self._TOKEN_URL[config.dhl_test_mode]
         self._api_url = self._API_URL[config.dhl_test_mode]
 
@@ -176,7 +178,9 @@ class DHLClient:
             timeout=30,
         )
         resp.raise_for_status()
-        self.token = resp.json()["access_token"]
+        data = resp.json()
+        self.token = data["access_token"]
+        self._token_expires_at = time.time() + data.get("expires_in", 3600) - 60
 
     def _headers(self) -> dict:
         return {
@@ -211,7 +215,7 @@ class DHLClient:
 
     def create_shipment(self, recipient: dict, weight_g: int, product_code: str, ref_no: str) -> dict:
         """Returns the full API response dict. Caller checks for errors."""
-        if not self.token:
+        if not self.token or time.time() >= self._token_expires_at:
             self.login()
 
         sender = self.config.sender
